@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 
 type PageProps = {
@@ -42,160 +42,6 @@ type Booking = {
   createdAt: string;
 };
 
-const flights: Flight[] = [
-  {
-    id: "df101-2026-06-05",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 6,
-    price: 950,
-    departureTime: "2026-06-05T10:00:00",
-    arrivalTime: "2026-06-05T12:30:00",
-  },
-  {
-    id: "df101-2026-06-12",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 5,
-    price: 950,
-    departureTime: "2026-06-12T10:00:00",
-    arrivalTime: "2026-06-12T12:30:00",
-  },
-  {
-    id: "df101-2026-06-19",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 4,
-    price: 950,
-    departureTime: "2026-06-19T10:00:00",
-    arrivalTime: "2026-06-19T12:30:00",
-  },
-  {
-    id: "df102-2026-06-07",
-    flightNumber: "DF102",
-    origin: "YSSY",
-    destination: "NZNE",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 4,
-    price: 950,
-    departureTime: "2026-06-07T15:00:00",
-    arrivalTime: "2026-06-07T19:50:00",
-  },
-  {
-    id: "df201-2026-06-02",
-    flightNumber: "DF201",
-    origin: "NZNE",
-    destination: "NZRO",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 220,
-    departureTime: "2026-06-02T07:30:00",
-    arrivalTime: "2026-06-02T08:25:00",
-  },
-  {
-    id: "df203-2026-06-02",
-    flightNumber: "DF203",
-    origin: "NZNE",
-    destination: "NZRO",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 4,
-    price: 220,
-    departureTime: "2026-06-02T16:30:00",
-    arrivalTime: "2026-06-02T17:25:00",
-  },
-  {
-    id: "df202-2026-06-02",
-    flightNumber: "DF202",
-    origin: "NZRO",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 2,
-    price: 220,
-    departureTime: "2026-06-02T09:00:00",
-    arrivalTime: "2026-06-02T10:00:00",
-  },
-  {
-    id: "df204-2026-06-02",
-    flightNumber: "DF204",
-    origin: "NZRO",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 220,
-    departureTime: "2026-06-02T18:00:00",
-    arrivalTime: "2026-06-02T19:00:00",
-  },
-  {
-    id: "df301-2026-06-03",
-    flightNumber: "DF301",
-    origin: "NZNE",
-    destination: "NZGB",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 4,
-    price: 180,
-    departureTime: "2026-06-03T09:30:00",
-    arrivalTime: "2026-06-03T10:10:00",
-  },
-  {
-    id: "df302-2026-06-04",
-    flightNumber: "DF302",
-    origin: "NZGB",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 180,
-    departureTime: "2026-06-04T10:00:00",
-    arrivalTime: "2026-06-04T10:45:00",
-  },
-  {
-    id: "df401-2026-06-05",
-    flightNumber: "DF401",
-    origin: "NZNE",
-    destination: "NZCI",
-    aircraft: "HondaJet Elite",
-    capacity: 5,
-    availableSeats: 5,
-    price: 680,
-    departureTime: "2026-06-05T11:00:00",
-    arrivalTime: "2026-06-05T13:30:00",
-  },
-  {
-    id: "df501-2026-06-01",
-    flightNumber: "DF501",
-    origin: "NZNE",
-    destination: "NZTL",
-    aircraft: "HondaJet Elite",
-    capacity: 5,
-    availableSeats: 4,
-    price: 520,
-    departureTime: "2026-06-01T12:00:00",
-    arrivalTime: "2026-06-01T13:35:00",
-  },
-];
-
-function createBookingReference() {
-  const timePart = Date.now().toString().slice(-6);
-  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-  return `BK-${timePart}-${randomPart}`;
-}
-
 function formatDateTime(value: string) {
   return new Date(value).toLocaleString("en-NZ", {
     dateStyle: "medium",
@@ -206,16 +52,44 @@ function formatDateTime(value: string) {
 export default function BookFlightPage({ params }: PageProps) {
   const { flightId } = use(params);
 
-  const flight = flights.find((item) => item.id === flightId);
+  const [flight, setFlight] = useState<Flight | null>(null);
+  const [pageMessage, setPageMessage] = useState("Loading selected flight...");
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
   const [bookingRef, setBookingRef] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
-  function handleSubmit(event: React.FormEvent) {
+  useEffect(() => {
+    async function fetchFlight() {
+      try {
+        setLoading(true);
+
+        const response = await fetch(`/api/flights?flightId=${flightId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setFlight(data.flight);
+          setPageMessage("");
+        } else {
+          setPageMessage(data.message || "Flight not found.");
+        }
+      } catch {
+        setPageMessage("Failed to load flight from the database.");
+      }
+
+      setLoading(false);
+    }
+
+    fetchFlight();
+  }, [flightId]);
+
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
     if (!flight) {
@@ -223,42 +97,42 @@ export default function BookFlightPage({ params }: PageProps) {
       return;
     }
 
-    const newBookingRef = createBookingReference();
+    setBookingLoading(true);
+    setMessage("");
+    setBookingRef("");
 
-    const booking: Booking = {
-      bookingRef: newBookingRef,
-      flightId: flight.id,
-      flightNumber: flight.flightNumber,
-      origin: flight.origin,
-      destination: flight.destination,
-      aircraft: flight.aircraft,
-      price: flight.price,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      passenger: {
-        firstName,
-        lastName,
-        email,
-        phone,
-      },
-      status: "confirmed",
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          flightId: flight.id,
+          firstName,
+          lastName,
+          email,
+          phone,
+        }),
+      });
 
-    const existingBookings = JSON.parse(
-      localStorage.getItem("dfa-bookings") || "[]"
-    ) as Booking[];
+      const data = await response.json();
 
-    localStorage.setItem(
-      "dfa-bookings",
-      JSON.stringify([...existingBookings, booking])
-    );
+      if (data.success) {
+        const booking = data.booking as Booking;
+        setBookingRef(booking.bookingRef);
+        setMessage("Booking created successfully.");
+      } else {
+        setMessage(data.message || "Failed to create booking.");
+      }
+    } catch {
+      setMessage("Failed to connect to the booking database.");
+    }
 
-    setBookingRef(newBookingRef);
-    setMessage("Booking created successfully.");
+    setBookingLoading(false);
   }
 
-  if (!flight) {
+  if (loading || !flight) {
     return (
       <main
         className="min-h-screen bg-[#050816] bg-cover bg-center bg-fixed text-white"
@@ -273,12 +147,24 @@ export default function BookFlightPage({ params }: PageProps) {
               ← Back to Search
             </Link>
 
-            <div className="mt-10 rounded-3xl border border-white/10 bg-slate-950/80 p-8">
-              <h1 className="text-4xl font-black">Flight not found</h1>
+            <div className="mt-10 rounded-3xl border border-white/10 bg-slate-950/80 p-8 shadow-2xl backdrop-blur">
+              <h1 className="text-4xl font-black">
+                {loading ? "Loading flight" : pageMessage}
+              </h1>
+
               <p className="mt-4 text-slate-300">
-                Please return to the search page and choose another scheduled
-                flight.
+                Please wait while the selected flight is loaded from the
+                database.
               </p>
+
+              {!loading && (
+                <Link
+                  href="/search"
+                  className="mt-6 inline-block rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 hover:bg-sky-300"
+                >
+                  Search Flights
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -289,7 +175,7 @@ export default function BookFlightPage({ params }: PageProps) {
   return (
     <main
       className="min-h-screen bg-[#050816] bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: "url('/images/search-bg.png')" }}
+      style={{ backgroundImage: "url('/images/search-bg.jpg')" }}
     >
       <section className="min-h-screen bg-slate-950/80 px-6 py-10 backdrop-blur-[2px]">
         <div className="mx-auto max-w-6xl">
@@ -312,7 +198,7 @@ export default function BookFlightPage({ params }: PageProps) {
 
               <p className="mt-5 leading-8 text-slate-300">
                 Review the selected scheduled flight and enter passenger details
-                to create a booking.
+                to create a database booking.
               </p>
 
               <div className="mt-8 rounded-[2rem] border border-white/10 bg-slate-950/80 p-6 shadow-2xl backdrop-blur">
@@ -437,9 +323,10 @@ export default function BookFlightPage({ params }: PageProps) {
 
                 <button
                   type="submit"
-                  className="rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/20 transition hover:-translate-y-1 hover:bg-sky-300"
+                  disabled={bookingLoading}
+                  className="rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/20 transition hover:-translate-y-1 hover:bg-sky-300 disabled:opacity-60"
                 >
-                  Confirm Booking
+                  {bookingLoading ? "Creating Booking..." : "Confirm Booking"}
                 </button>
               </form>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 
 type Airport = {
@@ -55,183 +55,56 @@ const airports: Airport[] = [
   },
 ];
 
-const flights: Flight[] = [
-  {
-    id: "df101-2026-06-05",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 6,
-    price: 950,
-    departureTime: "2026-06-05T10:00:00",
-    arrivalTime: "2026-06-05T12:30:00",
-  },
-  {
-    id: "df101-2026-06-12",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 5,
-    price: 950,
-    departureTime: "2026-06-12T10:00:00",
-    arrivalTime: "2026-06-12T12:30:00",
-  },
-  {
-    id: "df101-2026-06-19",
-    flightNumber: "DF101",
-    origin: "NZNE",
-    destination: "YSSY",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 4,
-    price: 950,
-    departureTime: "2026-06-19T10:00:00",
-    arrivalTime: "2026-06-19T12:30:00",
-  },
-  {
-    id: "df102-2026-06-07",
-    flightNumber: "DF102",
-    origin: "YSSY",
-    destination: "NZNE",
-    aircraft: "SyberJet SJ30i",
-    capacity: 6,
-    availableSeats: 4,
-    price: 950,
-    departureTime: "2026-06-07T15:00:00",
-    arrivalTime: "2026-06-07T19:50:00",
-  },
-  {
-    id: "df201-2026-06-02",
-    flightNumber: "DF201",
-    origin: "NZNE",
-    destination: "NZRO",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 220,
-    departureTime: "2026-06-02T07:30:00",
-    arrivalTime: "2026-06-02T08:25:00",
-  },
-  {
-    id: "df203-2026-06-02",
-    flightNumber: "DF203",
-    origin: "NZNE",
-    destination: "NZRO",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 4,
-    price: 220,
-    departureTime: "2026-06-02T16:30:00",
-    arrivalTime: "2026-06-02T17:25:00",
-  },
-  {
-    id: "df202-2026-06-02",
-    flightNumber: "DF202",
-    origin: "NZRO",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 2,
-    price: 220,
-    departureTime: "2026-06-02T09:00:00",
-    arrivalTime: "2026-06-02T10:00:00",
-  },
-  {
-    id: "df204-2026-06-02",
-    flightNumber: "DF204",
-    origin: "NZRO",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 220,
-    departureTime: "2026-06-02T18:00:00",
-    arrivalTime: "2026-06-02T19:00:00",
-  },
-  {
-    id: "df301-2026-06-03",
-    flightNumber: "DF301",
-    origin: "NZNE",
-    destination: "NZGB",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 4,
-    price: 180,
-    departureTime: "2026-06-03T09:30:00",
-    arrivalTime: "2026-06-03T10:10:00",
-  },
-  {
-    id: "df302-2026-06-04",
-    flightNumber: "DF302",
-    origin: "NZGB",
-    destination: "NZNE",
-    aircraft: "Cirrus SF50",
-    capacity: 4,
-    availableSeats: 3,
-    price: 180,
-    departureTime: "2026-06-04T10:00:00",
-    arrivalTime: "2026-06-04T10:45:00",
-  },
-  {
-    id: "df401-2026-06-05",
-    flightNumber: "DF401",
-    origin: "NZNE",
-    destination: "NZCI",
-    aircraft: "HondaJet Elite",
-    capacity: 5,
-    availableSeats: 5,
-    price: 680,
-    departureTime: "2026-06-05T11:00:00",
-    arrivalTime: "2026-06-05T13:30:00",
-  },
-  {
-    id: "df501-2026-06-01",
-    flightNumber: "DF501",
-    origin: "NZNE",
-    destination: "NZTL",
-    aircraft: "HondaJet Elite",
-    capacity: 5,
-    availableSeats: 4,
-    price: 520,
-    departureTime: "2026-06-01T12:00:00",
-    arrivalTime: "2026-06-01T13:35:00",
-  },
-];
-
 export default function SearchPage() {
   const [origin, setOrigin] = useState("NZNE");
   const [destination, setDestination] = useState("YSSY");
   const [date1, setDate1] = useState("2026-06-01");
   const [date2, setDate2] = useState("2026-06-30");
   const [hasSearched, setHasSearched] = useState(false);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const searchResults = useMemo(() => {
-    if (!hasSearched) {
-      return [];
+  async function handleSearch(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (origin === destination) {
+      setHasSearched(true);
+      setFlights([]);
+      setMessage("Origin and destination cannot be the same.");
+      return;
     }
 
-    const start = new Date(`${date1}T00:00:00`);
-    const end = new Date(`${date2}T23:59:59`);
-
-    return flights.filter((flight) => {
-      const departure = new Date(flight.departureTime);
-
-      return (
-        flight.origin === origin &&
-        flight.destination === destination &&
-        departure >= start &&
-        departure <= end
-      );
-    });
-  }, [origin, destination, date1, date2, hasSearched]);
-
-  function handleSearch(event: React.FormEvent) {
-    event.preventDefault();
     setHasSearched(true);
+    setLoading(true);
+    setFlights([]);
+    setMessage("Searching available flights...");
+
+    try {
+      const response = await fetch(
+        `/api/flights?origin=${origin}&destination=${destination}&date1=${date1}&date2=${date2}`
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFlights(data.flights);
+
+        if (data.flights.length === 0) {
+          setMessage(
+            "No flights found. Try a wider date range or choose another destination."
+          );
+        } else {
+          setMessage("");
+        }
+      } else {
+        setMessage(data.message || "Failed to search flights.");
+      }
+    } catch {
+      setMessage("Failed to connect to the flight database.");
+    }
+
+    setLoading(false);
   }
 
   function getAirport(code: string) {
@@ -247,10 +120,10 @@ export default function SearchPage() {
 
   return (
     <main
-      className="min-h-screen bg-[#050816] bg-cover bg-center text-white"
+      className="min-h-screen bg-[#050816] bg-cover bg-center bg-fixed text-white"
       style={{ backgroundImage: "url('/images/search-bg.jpg')" }}
     >
-      <section className="relative min-h-screen overflow-hidden bg-slate-950/80 px-6 py-10 ">
+      <section className="relative min-h-screen overflow-hidden bg-slate-950/80 px-6 py-10 backdrop-blur-[2px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,#1d4ed8_0,transparent_35%),radial-gradient(circle_at_bottom_right,#0ea5e9_0,transparent_30%)] opacity-25" />
 
         <div className="relative mx-auto max-w-7xl">
@@ -273,17 +146,17 @@ export default function SearchPage() {
 
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
                 Select an origin, destination, and date range to view available
-                Dairy Flat Airways flights.
+                Dairy Flat Airways flights from the database.
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-xl backdrop-blur">
               <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
-                Search tip
+                Database mode
               </p>
               <p className="mt-3 leading-7 text-slate-300">
-                Some routes are not daily. If no flights appear, try a wider
-                date range or choose another destination.
+                Flight data is now loaded through the API and stored in MongoDB
+                Atlas.
               </p>
             </div>
           </div>
@@ -363,9 +236,10 @@ export default function SearchPage() {
 
               <button
                 type="submit"
-                className="rounded-2xl bg-sky-400 px-8 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/25 transition hover:-translate-y-1 hover:bg-sky-300"
+                disabled={loading}
+                className="rounded-2xl bg-sky-400 px-8 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/25 transition hover:-translate-y-1 hover:bg-sky-300 disabled:opacity-60"
               >
-                Search
+                {loading ? "Searching..." : "Search"}
               </button>
             </div>
           </form>
@@ -386,28 +260,24 @@ export default function SearchPage() {
               </div>
             )}
 
-            {hasSearched && searchResults.length === 0 && (
+            {hasSearched && message && flights.length === 0 && (
               <div className="rounded-3xl border border-white/10 bg-slate-950/75 p-8 shadow-xl backdrop-blur">
                 <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
-                  No results
+                  Search message
                 </p>
-                <h2 className="mt-2 text-2xl font-black">No flights found.</h2>
-                <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-                  Try a wider date range or select another route. Some services
-                  only operate on specific weekdays.
-                </p>
+                <h2 className="mt-2 text-2xl font-black">{message}</h2>
               </div>
             )}
 
-            {searchResults.length > 0 && (
+            {flights.length > 0 && (
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
                     Search results
                   </p>
                   <h2 className="mt-1 text-3xl font-black">
-                    {searchResults.length} flight
-                    {searchResults.length > 1 ? "s" : ""} found
+                    {flights.length} flight
+                    {flights.length > 1 ? "s" : ""} found
                   </h2>
                 </div>
 
@@ -419,7 +289,7 @@ export default function SearchPage() {
             )}
 
             <div className="grid gap-5">
-              {searchResults.map((flight) => (
+              {flights.map((flight) => (
                 <div
                   key={flight.id}
                   className="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/80 shadow-xl backdrop-blur transition hover:-translate-y-1 hover:bg-slate-900"

@@ -35,27 +35,36 @@ export default function MyBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [message, setMessage] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function handleSearch(event: React.FormEvent) {
+  async function handleSearch(event: React.FormEvent) {
     event.preventDefault();
 
-    const savedBookings = JSON.parse(
-      localStorage.getItem("dfa-bookings") || "[]"
-    ) as Booking[];
-
-    const matchedBookings = savedBookings.filter(
-      (booking) =>
-        booking.passenger.email.toLowerCase() === email.toLowerCase()
-    );
-
-    setBookings(matchedBookings);
+    setLoading(true);
     setHasSearched(true);
+    setBookings([]);
+    setMessage("Searching bookings...");
 
-    if (matchedBookings.length === 0) {
-      setMessage("No bookings found for this email address.");
-    } else {
-      setMessage("");
+    try {
+      const response = await fetch(`/api/bookings?email=${email}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setBookings(data.bookings);
+
+        if (data.bookings.length === 0) {
+          setMessage("No bookings found for this email address.");
+        } else {
+          setMessage("");
+        }
+      } else {
+        setMessage(data.message || "Failed to find bookings.");
+      }
+    } catch {
+      setMessage("Failed to connect to the booking database.");
     }
+
+    setLoading(false);
   }
 
   return (
@@ -84,17 +93,17 @@ export default function MyBookingsPage() {
 
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
                 Enter the passenger email address used when making a booking.
-                The system will display all matching scheduled flights.
+                The system will display all matching bookings from MongoDB.
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-xl backdrop-blur">
               <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
-                Reminder
+                Database search
               </p>
               <p className="mt-3 leading-7 text-slate-300">
-                Use the same email address that was entered on the booking form.
-                You can then view the invoice for each booking.
+                Bookings are now stored in MongoDB Atlas, so they can be viewed
+                from another browser or device after deployment.
               </p>
             </div>
           </div>
@@ -121,9 +130,10 @@ export default function MyBookingsPage() {
 
               <button
                 type="submit"
-                className="rounded-2xl bg-sky-400 px-8 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/25 transition hover:-translate-y-1 hover:bg-sky-300"
+                disabled={loading}
+                className="rounded-2xl bg-sky-400 px-8 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/25 transition hover:-translate-y-1 hover:bg-sky-300 disabled:opacity-60"
               >
-                Find Bookings
+                {loading ? "Searching..." : "Find Bookings"}
               </button>
             </div>
           </form>
@@ -140,31 +150,35 @@ export default function MyBookingsPage() {
                 </h2>
 
                 <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-                  After searching, all bookings linked to that email address
-                  will appear here.
+                  After searching, all database bookings linked to that email
+                  address will appear here.
                 </p>
               </div>
             )}
 
-            {hasSearched && message && (
+            {hasSearched && message && bookings.length === 0 && (
               <div className="rounded-3xl border border-white/10 bg-slate-950/75 p-8 shadow-xl backdrop-blur">
                 <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
-                  No results
+                  Search message
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black">{message}</h2>
 
-                <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-                  Check the spelling of the email address or create a new
-                  booking from the flight search page.
-                </p>
+                {!loading && (
+                  <>
+                    <p className="mt-3 max-w-2xl leading-7 text-slate-300">
+                      Check the spelling of the email address or create a new
+                      booking from the flight search page.
+                    </p>
 
-                <Link
-                  href="/search"
-                  className="mt-6 inline-block rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 hover:bg-sky-300"
-                >
-                  Search Flights
-                </Link>
+                    <Link
+                      href="/search"
+                      className="mt-6 inline-block rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 hover:bg-sky-300"
+                    >
+                      Search Flights
+                    </Link>
+                  </>
+                )}
               </div>
             )}
 

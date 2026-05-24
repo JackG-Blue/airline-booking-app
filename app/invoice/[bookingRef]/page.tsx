@@ -41,22 +41,28 @@ export default function InvoicePage({ params }: PageProps) {
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [message, setMessage] = useState("Loading invoice...");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedBookings = JSON.parse(
-      localStorage.getItem("dfa-bookings") || "[]"
-    ) as Booking[];
+    async function fetchBooking() {
+      try {
+        const response = await fetch(`/api/bookings?bookingRef=${bookingRef}`);
+        const data = await response.json();
 
-    const foundBooking = savedBookings.find(
-      (item) => item.bookingRef === bookingRef
-    );
+        if (data.success && data.bookings.length > 0) {
+          setBooking(data.bookings[0]);
+          setMessage("");
+        } else {
+          setMessage(data.message || "Booking not found.");
+        }
+      } catch {
+        setMessage("Failed to load booking from the database.");
+      }
 
-    if (foundBooking) {
-      setBooking(foundBooking);
-      setMessage("");
-    } else {
-      setMessage("Booking not found.");
+      setLoading(false);
     }
+
+    fetchBooking();
   }, [bookingRef]);
 
   return (
@@ -90,19 +96,25 @@ export default function InvoicePage({ params }: PageProps) {
 
           {message && (
             <div className="mt-10 rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl backdrop-blur">
-              <h2 className="text-2xl font-black">{message}</h2>
+              <h2 className="text-2xl font-black">
+                {loading ? "Loading invoice..." : message}
+              </h2>
 
-              <p className="mt-3 text-slate-300">
-                Please check your booking reference or return to the search page
-                to create a new booking.
-              </p>
+              {!loading && (
+                <>
+                  <p className="mt-3 text-slate-300">
+                    Please check your booking reference or return to the search
+                    page to create a new booking.
+                  </p>
 
-              <Link
-                href="/search"
-                className="mt-6 inline-block rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 hover:bg-sky-300"
-              >
-                Search Flights
-              </Link>
+                  <Link
+                    href="/search"
+                    className="mt-6 inline-block rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 hover:bg-sky-300"
+                  >
+                    Search Flights
+                  </Link>
+                </>
+              )}
             </div>
           )}
 

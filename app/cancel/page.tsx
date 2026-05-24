@@ -3,67 +3,50 @@
 import { useState } from "react";
 import Link from "next/link";
 
-type Booking = {
-  bookingRef: string;
-  flightId: string;
-  flightNumber: string;
-  origin: string;
-  destination: string;
-  aircraft: string;
-  price: number;
-  departureTime: string;
-  arrivalTime: string;
-  passenger: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-  status: "confirmed" | "cancelled";
-  createdAt: string;
-};
-
 export default function CancelBookingPage() {
   const [bookingRef, setBookingRef] = useState("");
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [cancelledRef, setCancelledRef] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleCancel(event: React.FormEvent) {
+  async function handleCancel(event: React.FormEvent) {
     event.preventDefault();
 
-    const savedBookings = JSON.parse(
-      localStorage.getItem("dfa-bookings") || "[]"
-    ) as Booking[];
+    setLoading(true);
+    setMessage("");
+    setSuccess(false);
+    setCancelledRef("");
 
-    const bookingIndex = savedBookings.findIndex(
-      (booking) => booking.bookingRef.toLowerCase() === bookingRef.toLowerCase()
-    );
+    try {
+      const response = await fetch("/api/bookings/cancel", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          bookingRef,
+        }),
+      });
 
-    if (bookingIndex === -1) {
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        setCancelledRef(data.booking.bookingRef);
+        setMessage("Booking cancelled successfully.");
+      } else {
+        setSuccess(false);
+        setCancelledRef(data.booking?.bookingRef || "");
+        setMessage(data.message || "Failed to cancel booking.");
+      }
+    } catch {
       setSuccess(false);
       setCancelledRef("");
-      setMessage("Booking reference not found.");
-      return;
+      setMessage("Failed to connect to the booking database.");
     }
 
-    if (savedBookings[bookingIndex].status === "cancelled") {
-      setSuccess(false);
-      setCancelledRef(savedBookings[bookingIndex].bookingRef);
-      setMessage("This booking has already been cancelled.");
-      return;
-    }
-
-    savedBookings[bookingIndex] = {
-      ...savedBookings[bookingIndex],
-      status: "cancelled",
-    };
-
-    localStorage.setItem("dfa-bookings", JSON.stringify(savedBookings));
-
-    setSuccess(true);
-    setCancelledRef(savedBookings[bookingIndex].bookingRef);
-    setMessage("Booking cancelled successfully.");
+    setLoading(false);
   }
 
   return (
@@ -91,7 +74,7 @@ export default function CancelBookingPage() {
 
             <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
               Enter your booking reference to cancel a confirmed booking. The
-              updated status will also appear on the invoice page.
+              updated status will be saved in MongoDB and shown on the invoice.
             </p>
           </div>
 
@@ -113,9 +96,10 @@ export default function CancelBookingPage() {
 
             <button
               type="submit"
-              className="mt-5 w-full rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/20 transition hover:-translate-y-1 hover:bg-sky-300"
+              disabled={loading}
+              className="mt-5 w-full rounded-2xl bg-sky-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-sky-500/20 transition hover:-translate-y-1 hover:bg-sky-300 disabled:opacity-60"
             >
-              Cancel Booking
+              {loading ? "Cancelling..." : "Cancel Booking"}
             </button>
           </form>
 
@@ -167,13 +151,13 @@ export default function CancelBookingPage() {
 
           <div className="mt-8 rounded-3xl border border-white/10 bg-slate-950/70 p-6 shadow-xl backdrop-blur">
             <p className="text-sm font-semibold uppercase tracking-widest text-sky-300">
-              Note
+              Database note
             </p>
 
             <p className="mt-3 leading-7 text-slate-300">
-              This prototype stores bookings in the browser for demonstration.
-              If you clear browser data or use another browser, previous local
-              bookings may not appear.
+              This page updates the booking status in MongoDB Atlas. After
+              cancellation, the invoice and my bookings pages will show the
+              updated status.
             </p>
           </div>
         </div>
