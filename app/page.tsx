@@ -80,13 +80,6 @@ export default function Home() {
               </p>
               <p className="mt-1 text-xl font-black">Dairy Flat Airways</p>
             </div>
-
-            <div className="absolute bottom-6 right-6 rounded-2xl border border-white/10 bg-slate-950/70 px-5 py-4 backdrop-blur">
-              <p className="text-sm text-slate-300">Powered by</p>
-              <p className="mt-1 font-bold text-white">
-                Next.js · MongoDB Atlas · Vercel
-              </p>
-            </div>
           </div>
         </div>
       </section>
